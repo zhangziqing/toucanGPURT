@@ -1,0 +1,58 @@
+CGRegReadMetaInfo 8 4
+CGRegReadMetaInfo.reg 0
+CGRegReadMetaInfo.result 4
+CGExchangeReadMetaInfo 8 4
+CGExchangeReadMetaInfo.exchange 0
+CGExchangeReadMetaInfo.result 4
+CGExchangeWriteMetaInfo 8 4
+CGExchangeWriteMetaInfo.exchange 0
+CGExchangeWriteMetaInfo.dat 4
+CGExchangeWriteMetaInfo.count 6
+CGPrintMetaInfo 4 2
+CGPrintMetaInfo.en 0
+CGPrintMetaInfo.msg 2
+CGStopMetaInfo 2 2
+CGStopMetaInfo.en 0
+CGRegWriteMetaInfo 8 4
+CGRegWriteMetaInfo.reg 0
+CGRegWriteMetaInfo.dat 4
+CGRegWriteMetaInfo.count 6
+CGMemWriteMetaInfo 24 8
+CGMemWriteMetaInfo.hasMultipleWriter 0
+CGMemWriteMetaInfo.memBase 8
+CGMemWriteMetaInfo.addrVec 16
+CGMemWriteMetaInfo.dat 18
+CGMemWriteMetaInfo.en 20
+CGMicroPartLUTTopLevelOp 8 2
+CGMicroPartLUTTopLevelOp.lutIndex 0
+CGMicroPartLUTTopLevelOp.op0 2
+CGMicroPartLUTTopLevelOp.op1 4
+CGMicroPartLUTTopLevelOp.op2 6
+CGMicroPartLUTMiddleLevelOp 4 1
+CGMicroPartLUTLastLevelWriteBack 4 2
+CGMicroPartLUTLastLevelWriteBack.shuffleId 0
+CGMicroPartLUTLastLevelWriteBack.result 2
+CGMicroPartVecRead 20 2
+CGMicroPartVecRead.vecBase 0
+CGMicroPartVecRead.vecLength 2
+CGMicroPartVecRead.offset 4
+CGMicroPartVecRead.isConstVec 6
+CGMicroPartVecRead.index0 8
+CGMicroPartVecRead.index1 10
+CGMicroPartVecRead.index2 12
+CGMicroPartVecRead.index3 14
+CGMicroPartVecRead.outRangeValue 16
+CGMicroPartVecRead.result 18
+CGMicroPartVecArithOrLogic 10 2
+CGMicroPartVecArithOrLogic.vec1Base 0
+CGMicroPartVecArithOrLogic.vec2Base 2
+CGMicroPartVecArithOrLogic.vecLength 4
+CGMicroPartVecArithOrLogic.opName 6
+CGMicroPartVecArithOrLogic.isV1V2Const 7
+CGMicroPartVecArithOrLogic.result 8
+CGMicroPartMemRead 24 8
+CGMicroPartMemRead.hasMultipleWriter 0
+CGMicroPartMemRead.memBase 8
+CGMicroPartMemRead.en 16
+CGMicroPartMemRead.addrVec 18
+CGMicroPartMemRead.result 20

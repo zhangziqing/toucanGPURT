@@ -1,0 +1,172 @@
+{
+  "upstream": "132daee",
+  "archives": {
+    "wide32": {
+      "archive_sha256": "c8a972f2af8bdfaf2950d843a25b8f5473d99b049223cefd6f8b6cd51ab0f206",
+      "layout_header": {
+        "path": "reused-sources/final32/runtime/include/ToucanGPUGenDataTypes.h",
+        "bytes": 7177,
+        "sha256": "6f266aa40b489a79da250144c67c4c4a50741b6d990f754aee2d2dd8731d6cec"
+      }
+    },
+    "legacy16": {
+      "archive_sha256": "e36e13a4492f16f7f863e076de2d39bdd427f6ec14f56d9e5cc531a2995d3623",
+      "layout_header": {
+        "path": "baseline-sources/runtime/include/ToucanGPUGenDataTypes.h",
+        "bytes": 7177,
+        "sha256": "7864f2fbdbe3c45807de24be130a34e42e0f8cc35dd086f1127ed53c415a48ed"
+      }
+    }
+  },
+  "imports": {
+    "LICENSE": {
+      "evidence_path": "reused-sources/final32/runtime/LICENSE",
+      "bytes": 1530,
+      "sha256": "b425999fc5c01489a5a7cc6e91a692b7bece35d53d683577a505b1c95ab14542"
+    },
+    "Makefile": {
+      "evidence_path": "reused-sources/final32/runtime/Makefile",
+      "bytes": 1142,
+      "sha256": "44b6f0665a0b8cdb399664dc9a0d7f7435e350fa0486b900c42b344dc187894e"
+    },
+    "include/FinalOnly.cuh": {
+      "evidence_path": "reused-sources/final32/runtime/include/FinalOnly.cuh",
+      "bytes": 1955,
+      "sha256": "f810f06a045eb789261aec4a4747c66ed4f8ca24e1337948a345b84a0f99682d"
+    },
+    "include/FinalOnly.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/FinalOnly.h",
+      "bytes": 547,
+      "sha256": "a25165443b1ad2d0189afe0abd1a42e940ce0bdb68fad49d74979ebd1f4eccbd"
+    },
+    "include/FinalRunner.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/FinalRunner.h",
+      "bytes": 5095,
+      "sha256": "5e336e04b7ace2b091f19f3120e76375e79362bf20cec31c5479706f484d4eaa"
+    },
+    "include/GPUConsts.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/GPUConsts.h",
+      "bytes": 44,
+      "sha256": "205c3b34414f6ace3d9a5b41f0eedaaa8f0c1970e8d3e3f21ef9629b54a451e1"
+    },
+    "include/GpuSession.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/GpuSession.h",
+      "bytes": 3522,
+      "sha256": "5af7025f60943bb8149413ce7922839a67eb90ae9dafa62b8d9b3eb039ed9349"
+    },
+    "include/NanhuDeviceModel.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/NanhuDeviceModel.h",
+      "bytes": 2712,
+      "sha256": "0ab01a746776d529ca0383b6da00698035ce8e394a6a197cbbd4530269cbf801"
+    },
+    "include/NanhuGpu.cuh": {
+      "evidence_path": "reused-sources/final32/runtime/include/NanhuGpu.cuh",
+      "bytes": 4946,
+      "sha256": "8894f1f79d8f6b899509e2ca000f1d2fec0665a788e02bda671092420f926a01"
+    },
+    "include/NanhuGpu.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/NanhuGpu.h",
+      "bytes": 442,
+      "sha256": "652e8772f82011f17cc0812d8eb93e3418ec5ef258e38dfad9431280fc3da89b"
+    },
+    "include/SimConfigs.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/SimConfigs.h",
+      "bytes": 100,
+      "sha256": "8af3cf4b724b27ec2b36a0b8ff5ac02e02acb99a5a98f60fe41c4a6108fb892b"
+    },
+    "include/SimEval.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/SimEval.h",
+      "bytes": 1135,
+      "sha256": "c2e22e3210c4b93e300eca0fdfe697cd65d1509f7384ae9c6c20b398c1e0269a"
+    },
+    "include/StageSchedule.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/StageSchedule.h",
+      "bytes": 2861,
+      "sha256": "38941a220549186d61af472bdb71241fdf43dc81b96309617371ea3f95e38257"
+    },
+    "include/ToucanGPUGenDataTypes.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/ToucanGPUGenDataTypes.h",
+      "bytes": 7177,
+      "sha256": "6f266aa40b489a79da250144c67c4c4a50741b6d990f754aee2d2dd8731d6cec"
+    },
+    "include/ToucanGPUSim.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/ToucanGPUSim.h",
+      "bytes": 1931,
+      "sha256": "25933cfe140a5280a5e3723d473d709b155e8d0b6dbfc2f66bc4fae03869233f"
+    },
+    "include/WidePool.h": {
+      "evidence_path": "reused-sources/final32/runtime/include/WidePool.h",
+      "bytes": 168,
+      "sha256": "0c13eeaf4cfbf1849330ad8622b7f248813863255d0c63113da5a46c946e2c60"
+    },
+    "main.cpp": {
+      "evidence_path": "reused-sources/final32/runtime/main.cpp",
+      "bytes": 1323,
+      "sha256": "67fd2155ef60750945397bbd820cb831be3c74c3298561894c3c7d6142832b2b"
+    },
+    "src/Serializer.cpp": {
+      "evidence_path": "reused-sources/final32/runtime/src/Serializer.cpp",
+      "bytes": 14555,
+      "sha256": "c92db3c5cf37422f16d0c3fee03b01cf53f102c6ee0f8cd0379e37594455c7c2"
+    },
+    "src/SimEval.cu": {
+      "evidence_path": "reused-sources/final32/runtime/src/SimEval.cu",
+      "bytes": 42029,
+      "sha256": "0af23162fbca1ade63869fe590d06e488cdfd91f7f04384296e33fbc71e809df"
+    },
+    "src/SimInit.cpp": {
+      "evidence_path": "reused-sources/final32/runtime/src/SimInit.cpp",
+      "bytes": 1515,
+      "sha256": "01d381462f092cd044967a57f20a01dc3844361daadf18a945134c1b4cfabd19"
+    },
+    "src/SimVCD_Dummy.cpp": {
+      "evidence_path": "reused-sources/final32/runtime/src/SimVCD_Dummy.cpp",
+      "bytes": 332,
+      "sha256": "adaca75f7b1718cb7faa8c1b511fbe22be24fc43a7062da18ea50c6095e86252"
+    },
+    "src/ToucanSim.cu": {
+      "evidence_path": "reused-sources/final32/runtime/src/ToucanSim.cu",
+      "bytes": 10464,
+      "sha256": "29f1ce09325c9fba88931e2326289eda7e9194d4a5d0aad5a2ae46fa44024ad6"
+    },
+    "unsupport/SimVCD.cpp": {
+      "evidence_path": "reused-sources/final32/runtime/unsupport/SimVCD.cpp",
+      "bytes": 7478,
+      "sha256": "a46065802ac8168db1d569332658164b056a87395dadda9ddbd30bc0f2435362"
+    },
+    "runner/checked.cpp": {
+      "evidence_path": "reused-sources/checked32/runner/nanhu.cpp",
+      "bytes": 15433,
+      "sha256": "b80cd74887ec7d5e8b30353df8e2d24687d822a9c929948c641514ff52872d6c"
+    },
+    "runner/final.cpp": {
+      "evidence_path": "reused-sources/final32/runner/nanhu.cpp",
+      "bytes": 7980,
+      "sha256": "7ba81cda75f8fbd17d523284243a09d35e34dc475158192d19527b5b044efa12"
+    },
+    "runner/Devices.h": {
+      "evidence_path": "reused-sources/final32/runner/Devices.h",
+      "bytes": 2716,
+      "sha256": "21be3dbf28b06f5b6e70bddc55b9e04dc53f022d33757c6a824adfc473c11701"
+    },
+    "runner/rv64_loop_oracle.h": {
+      "evidence_path": "reused-sources/final32/runner/rv64_loop_oracle.h",
+      "bytes": 4139,
+      "sha256": "97746ca18db86ef45b040d9ea8635cd18c9f9bbf6f4d048eccd1fc0b0f7626a7"
+    },
+    "runner/resources.cu": {
+      "evidence_path": "experiment/provenance/prior-resource-probe.cu",
+      "bytes": 2599,
+      "sha256": "5eeda71dcb1342bcf660799d39bbf2f157babcf3dd1957fa24903d9351a471a3"
+    }
+  },
+  "adapted_paths": [
+    "Makefile",
+    "include/ToucanGPUGenDataTypes.h",
+    "include/StageSchedule.h",
+    "src/Serializer.cpp",
+    "src/SimEval.cu",
+    "src/ToucanSim.cu"
+  ],
+  "layout_generation": "g++ -std=c++20 tests/layout.cpp against each hash-verified original header; x86_64 Linux"
+}

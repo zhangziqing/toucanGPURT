@@ -163,7 +163,7 @@ typedef struct {
 typedef struct {
   // Private data
   uint8_t *valuePool;
-  uint32_t valuePoolSize;
+  PoolOffset valuePoolSize;
 
   uint8_t *constVecPool;
 
@@ -434,7 +434,7 @@ __device__ void evalSingleMicroPart(
     const auto &op = lastOps[lane_id];
 
     uint8_t shuffleId = 0;
-    uint32_t resultId = 0;
+    PoolOffset resultId = 0;
 
     if (lane_id < currentLevelSize) {
       shuffleId = op.shuffleId;
@@ -545,7 +545,7 @@ __device__ void evalSingleMicroPart(
       if (resultIsVec) {
         for (int i = 0; i < vecLength; i++) {
           uint8_t seg = v1Result & 0xF;
-          uint32_t resultId = op.result + i;
+          PoolOffset resultId = op.result + i;
           valuePool[resultId] = seg;
           v1Result = v1Result >> 4;
         }
@@ -1077,6 +1077,9 @@ void copy_netlist_to_gpu(toucanGPUSim::SimDesignInfo &design) {
     assert(eachPart.valuePool.size() == eachPart.valuePoolSize);
     allocAndCopyVector(&(partInfo.valuePool), eachPart.valuePool.data(), eachPart.valuePoolSize);
     partInfo.valuePoolSize = eachPart.valuePoolSize;
+#ifndef TOUCAN_WIDE_POOL
+    assert(eachPart.valuePoolSize <= UINT16_MAX);
+#endif
 
     // copy const vec pool
     if (eachPart.constVecPool.empty()) {

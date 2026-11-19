@@ -26,8 +26,13 @@ inline std::vector<uint32_t> stagePartitionOffsets(const SimDesignInfo &design) 
       if (partId != nextPart || nextPart >= design.parts.size())
         throw std::invalid_argument("Stage partition IDs must be consecutive and unique");
       const auto &part = design.parts[nextPart++];
+#ifdef TOUCAN_WIDE_POOL
       if (part.valuePoolSize > widePoolMaxBytes)
         throw std::invalid_argument("Partition exceeds wide pool maximum");
+#else
+      if (part.valuePoolSize >= std::numeric_limits<uint16_t>::max())
+        throw std::invalid_argument("Partition value pool must be below 65535 bytes");
+#endif
       const auto reg = part.op_last_regWrite;
       const auto exchange = part.op_last_exchangeWrite;
       if ((reg.count && uint64_t(reg.dat) + reg.count > part.valuePoolSize) ||

@@ -12,36 +12,43 @@
 
 namespace toucanGPUSim {
 
+  // This macro must match the compiler and every translation unit in the runner.
+#ifdef TOUCAN_WIDE_POOL
+  using PoolOffset = uint32_t;
+#else
+  using PoolOffset = uint16_t;
+#endif
+
   // const uint16_t MAX_REGREAD_BYTECOUNT = 2;
 
   // Reg read, only appear in first level
   struct CGRegReadMetaInfo {
     uint32_t reg;
-    uint32_t result;
+    PoolOffset result;
   };
 
   struct CGExchangeReadMetaInfo {
     uint32_t exchange;
-    uint32_t result;
+    PoolOffset result;
   };
   struct CGExchangeWriteMetaInfo {
     uint32_t exchange;
-    uint32_t dat;
-    uint32_t count;
+    PoolOffset dat;
+    PoolOffset count;
   };
 
   // last level: regWrite, memWrite, stop, print
   struct CGPrintMetaInfo {
-    uint32_t en;
+    PoolOffset en;
     uint16_t msg;
   };
   struct CGStopMetaInfo {
-    uint32_t en;
+    PoolOffset en;
   };
   struct CGRegWriteMetaInfo {
     uint32_t reg;
-    uint32_t dat;
-    uint32_t count;
+    PoolOffset dat;
+    PoolOffset count;
   };
   struct CGMemWriteMetaInfo {
     // const
@@ -50,9 +57,9 @@ namespace toucanGPUSim {
     // uint32_t memDepth;
     uint64_t memBase;
 
-    uint32_t addrVec;
-    uint32_t dat;
-    uint32_t en;
+    PoolOffset addrVec;
+    PoolOffset dat;
+    PoolOffset en;
   };
 
 
@@ -61,9 +68,9 @@ namespace toucanGPUSim {
   struct CGMicroPartLUTTopLevelOp {
     // lut size: 4898
     uint16_t lutIndex;
-    uint32_t op0;
-    uint32_t op1;
-    uint32_t op2;
+    PoolOffset op0;
+    PoolOffset op1;
+    PoolOffset op2;
   };
 
   // Note: old version
@@ -142,11 +149,11 @@ namespace toucanGPUSim {
     // 0~31
     uint8_t shuffleId;
 
-    uint32_t result;
+    PoolOffset result;
   };
 
   struct CGMicroPartVecRead {
-    uint32_t vecBase;
+    PoolOffset vecBase;
     // Note: vecLength is static
     uint16_t vecLength;
     // Note: This offset is a static value!!!!
@@ -154,13 +161,13 @@ namespace toucanGPUSim {
     bool isConstVec;
     
     // max addr width: 16
-    uint32_t index0;
-    uint32_t index1;
-    uint32_t index2;
-    uint32_t index3;
-    uint32_t outRangeValue;
+    PoolOffset index0;
+    PoolOffset index1;
+    PoolOffset index2;
+    PoolOffset index3;
+    PoolOffset outRangeValue;
 
-    uint32_t result;
+    PoolOffset result;
   };
 
   #define VEC_ARITH_ADD 0
@@ -171,15 +178,15 @@ namespace toucanGPUSim {
   #define VEC_LOGIC_LT 4
   #define VEC_LOGIC_LE 5
   struct CGMicroPartVecArithOrLogic {
-    uint32_t vec1Base;
-    uint32_t vec2Base;
+    PoolOffset vec1Base;
+    PoolOffset vec2Base;
 
     uint16_t vecLength;
     uint8_t opName;
     // 00, 01, 10, 11
     uint8_t isV1V2Const;
 
-    uint32_t result;
+    PoolOffset result;
   };
 
 
@@ -204,10 +211,10 @@ namespace toucanGPUSim {
     // static
     uint64_t memBase;
 
-    uint32_t en;
-    uint32_t addrVec;
+    PoolOffset en;
+    PoolOffset addrVec;
 
-    uint32_t result;
+    PoolOffset result;
   };
 
   struct CGMicroPartInfo {

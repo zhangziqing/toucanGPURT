@@ -128,7 +128,7 @@ int ToucanSimulator::init(const int gpu_id, const std::string designBinFilename,
   }
   toucanGPUSim::deserializeSimDesignInfo(ifs_design, design);
   if (!ifs_design) {
-    std::cerr << "Cannot load wide32-v1 GPU design\n";
+    std::cerr << "Cannot load GPU design with the selected runtime ABI\n";
     return -1;
   }
 

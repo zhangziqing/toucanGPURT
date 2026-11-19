@@ -199,7 +199,9 @@ static void deserializeSimPartitionInfo(std::istream& in, SimPartitionInfo& info
 
 
 void serializeSimDesignInfo(std::ostream& out, const SimDesignInfo& info) {
+#ifdef TOUCAN_WIDE_POOL
   out.write(widePoolMagic, sizeof(widePoolMagic));
+#endif
   serializePrimitive(out, info.regPoolSize);
   serializePrimitive(out, info.memPoolSize);
   serializePrimitive(out, info.exchangePoolSize);
@@ -227,12 +229,26 @@ void serializeSimDesignInfo(std::ostream& out, const SimDesignInfo& info) {
 
 
 void deserializeSimDesignInfo(std::istream& in, SimDesignInfo& info) {
+#ifdef TOUCAN_WIDE_POOL
   char magic[sizeof(widePoolMagic)]{};
   if (!in.read(magic, sizeof(magic)) || std::string_view(magic, sizeof(magic)) !=
       std::string_view(widePoolMagic, sizeof(widePoolMagic))) {
     in.setstate(std::ios::failbit);
     return;
   }
+#else
+  // Legacy files are headerless. Reject versioned wide files before raw lengths
+  // can be misinterpreted as allocation sizes. Design files must be seekable.
+  const auto start = in.tellg();
+  char magic[sizeof(widePoolMagic)]{};
+  if (start == std::istream::pos_type(-1) || !in.read(magic, sizeof(magic)) ||
+      std::string_view(magic, 6) == "TCWIDE") {
+    in.setstate(std::ios::failbit);
+    return;
+  }
+  in.seekg(start);
+  if (!in) return;
+#endif
   deserializePrimitive(in, info.regPoolSize);
   deserializePrimitive(in, info.memPoolSize);
   deserializePrimitive(in, info.exchangePoolSize);

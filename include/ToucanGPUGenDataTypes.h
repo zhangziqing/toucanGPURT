@@ -17,31 +17,31 @@ namespace toucanGPUSim {
   // Reg read, only appear in first level
   struct CGRegReadMetaInfo {
     uint32_t reg;
-    uint16_t result;
+    uint32_t result;
   };
 
   struct CGExchangeReadMetaInfo {
     uint32_t exchange;
-    uint16_t result;
+    uint32_t result;
   };
   struct CGExchangeWriteMetaInfo {
     uint32_t exchange;
-    uint16_t dat;
-    uint16_t count;
+    uint32_t dat;
+    uint32_t count;
   };
 
   // last level: regWrite, memWrite, stop, print
   struct CGPrintMetaInfo {
-    uint16_t en;
+    uint32_t en;
     uint16_t msg;
   };
   struct CGStopMetaInfo {
-    uint16_t en;
+    uint32_t en;
   };
   struct CGRegWriteMetaInfo {
     uint32_t reg;
-    uint16_t dat;
-    uint16_t count;
+    uint32_t dat;
+    uint32_t count;
   };
   struct CGMemWriteMetaInfo {
     // const
@@ -50,9 +50,9 @@ namespace toucanGPUSim {
     // uint32_t memDepth;
     uint64_t memBase;
 
-    uint16_t addrVec;
-    uint16_t dat;
-    uint16_t en;
+    uint32_t addrVec;
+    uint32_t dat;
+    uint32_t en;
   };
 
 
@@ -61,9 +61,9 @@ namespace toucanGPUSim {
   struct CGMicroPartLUTTopLevelOp {
     // lut size: 4898
     uint16_t lutIndex;
-    uint16_t op0;
-    uint16_t op1;
-    uint16_t op2;
+    uint32_t op0;
+    uint32_t op1;
+    uint32_t op2;
   };
 
   // Note: old version
@@ -142,11 +142,11 @@ namespace toucanGPUSim {
     // 0~31
     uint8_t shuffleId;
 
-    uint16_t result;
+    uint32_t result;
   };
 
   struct CGMicroPartVecRead {
-    uint16_t vecBase;
+    uint32_t vecBase;
     // Note: vecLength is static
     uint16_t vecLength;
     // Note: This offset is a static value!!!!
@@ -154,13 +154,13 @@ namespace toucanGPUSim {
     bool isConstVec;
     
     // max addr width: 16
-    uint16_t index0;
-    uint16_t index1;
-    uint16_t index2;
-    uint16_t index3;
-    uint16_t outRangeValue;
+    uint32_t index0;
+    uint32_t index1;
+    uint32_t index2;
+    uint32_t index3;
+    uint32_t outRangeValue;
 
-    uint16_t result;
+    uint32_t result;
   };
 
   #define VEC_ARITH_ADD 0
@@ -171,15 +171,15 @@ namespace toucanGPUSim {
   #define VEC_LOGIC_LT 4
   #define VEC_LOGIC_LE 5
   struct CGMicroPartVecArithOrLogic {
-    uint16_t vec1Base;
-    uint16_t vec2Base;
+    uint32_t vec1Base;
+    uint32_t vec2Base;
 
     uint16_t vecLength;
     uint8_t opName;
     // 00, 01, 10, 11
     uint8_t isV1V2Const;
 
-    uint16_t result;
+    uint32_t result;
   };
 
 
@@ -204,10 +204,10 @@ namespace toucanGPUSim {
     // static
     uint64_t memBase;
 
-    uint16_t en;
-    uint16_t addrVec;
+    uint32_t en;
+    uint32_t addrVec;
 
-    uint16_t result;
+    uint32_t result;
   };
 
   struct CGMicroPartInfo {

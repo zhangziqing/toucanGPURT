@@ -1,3 +1,5 @@
+#include "WidePool.h"
+#include <string_view>
 #include "ToucanGPUGenDataTypes.h"
 #include <fstream>
 
@@ -197,6 +199,7 @@ static void deserializeSimPartitionInfo(std::istream& in, SimPartitionInfo& info
 
 
 void serializeSimDesignInfo(std::ostream& out, const SimDesignInfo& info) {
+  out.write(widePoolMagic, sizeof(widePoolMagic));
   serializePrimitive(out, info.regPoolSize);
   serializePrimitive(out, info.memPoolSize);
   serializePrimitive(out, info.exchangePoolSize);
@@ -224,6 +227,12 @@ void serializeSimDesignInfo(std::ostream& out, const SimDesignInfo& info) {
 
 
 void deserializeSimDesignInfo(std::istream& in, SimDesignInfo& info) {
+  char magic[sizeof(widePoolMagic)]{};
+  if (!in.read(magic, sizeof(magic)) || std::string_view(magic, sizeof(magic)) !=
+      std::string_view(widePoolMagic, sizeof(widePoolMagic))) {
+    in.setstate(std::ios::failbit);
+    return;
+  }
   deserializePrimitive(in, info.regPoolSize);
   deserializePrimitive(in, info.memPoolSize);
   deserializePrimitive(in, info.exchangePoolSize);

@@ -37,3 +37,7 @@
 *.ptx
 *.cubin
 *.fatbin
+
+/build/
+__pycache__/
+/test_run

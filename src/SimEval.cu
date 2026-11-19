@@ -5,6 +5,7 @@
 // #define REG_WRITE_USE_ASYNC_MEMCPY
 
 #include "ToucanGPUGenDataTypes.h"
+#include "StageSchedule.h"
 
 #include "SimEval.h"
 #include "SimConfigs.h"
@@ -162,7 +163,7 @@ typedef struct {
 typedef struct {
   // Private data
   uint8_t *valuePool;
-  uint16_t valuePoolSize;
+  uint32_t valuePoolSize;
 
   uint8_t *constVecPool;
 
@@ -199,8 +200,9 @@ __device__ char **printMsgs;
 __device__ SimPartitionPtrs *partitions;
 
 __device__ uint32_t numTotalParts;
-__device__ uint32_t numParts_Region0, numParts_Region1;
-__device__ uint32_t partTaskCounter;
+__device__ uint32_t numStages;
+__device__ uint32_t *stageOffsets;
+__device__ unsigned long long partTaskCounter;
 
 
 #ifdef ENABLE_SIM_PROFILE
@@ -211,6 +213,12 @@ int64_t *profile_ticks_total_device;
 #endif
 
 uint8_t *regPool_device, *memPool_device, *exchangePool_device;
+#ifdef NANHU_GPU_DEVICES
+#include "NanhuGpu.cuh"
+#ifdef NANHU_FINAL_ONLY
+#include "FinalOnly.cuh"
+#endif
+#endif
 
 std::vector<SimPartitionPtrs> gpuPartInfos;
 
@@ -426,7 +434,7 @@ __device__ void evalSingleMicroPart(
     const auto &op = lastOps[lane_id];
 
     uint8_t shuffleId = 0;
-    uint16_t resultId = 0;
+    uint32_t resultId = 0;
 
     if (lane_id < currentLevelSize) {
       shuffleId = op.shuffleId;
@@ -537,7 +545,7 @@ __device__ void evalSingleMicroPart(
       if (resultIsVec) {
         for (int i = 0; i < vecLength; i++) {
           uint8_t seg = v1Result & 0xF;
-          uint16_t resultId = op.result + i;
+          uint32_t resultId = op.result + i;
           valuePool[resultId] = seg;
           v1Result = v1Result >> 4;
         }
@@ -865,194 +873,104 @@ __device__ void evalEachPartition(uint32_t partId) {
 
 
 
+// Every stage belongs to the same simulated cycle. The grid barrier publishes
+// its exchange writes before any consumer in a later stage can execute.
+__device__ void evalStagesStatic(uint32_t cycle) {
+  (void)cycle;
+  const uint32_t blockRank = blockIdx.x;
+  const uint32_t blockCount = gridDim.x;
+  for (uint32_t stage = 0; stage < numStages; ++stage) {
+    const uint32_t first = stageOffsets[stage];
+    const uint32_t end = stageOffsets[stage + 1];
+#ifdef ENABLE_SIM_PROFILE
+    const int64_t start = clock64();
+    const bool profile = cycle >= PROFILE_START_CYCLE &&
+                         cycle < PROFILE_START_CYCLE + PROFILE_COLLECT_CYCLE;
+    const uint32_t sample = cycle - PROFILE_START_CYCLE;
+#endif
+    for (uint64_t task = uint64_t(first) + blockRank; task < end; task += blockCount) {
+      const uint32_t partId = task;
+      evalEachPartition(partId);
+#ifdef ENABLE_SIM_PROFILE
+      if (profile && cg::this_thread_block().thread_rank() == 0) {
+        const int64_t elapsed = clock64() - start;
+        profile_ticks_useful[partId] =
+            (profile_ticks_useful[partId] * sample + elapsed) / (sample + 1);
+      }
+#endif
+    }
+    cg::this_grid().sync();
+#ifdef ENABLE_SIM_PROFILE
+    if (profile && cg::this_thread_block().thread_rank() == 0) {
+      const int64_t elapsed = clock64() - start;
+      for (uint64_t task = uint64_t(first) + blockRank; task < end; task += blockCount) {
+        const uint32_t partId = task;
+        profile_ticks_total[partId] =
+            (profile_ticks_total[partId] * sample + elapsed) / (sample + 1);
+      }
+    }
+#endif
+  }
+}
+
 __global__ void evalSingleCycle() {
-
-  uint32_t block_rank = blockIdx.x;
-  uint32_t blocks_in_grid = gridDim.x;
-
-  uint32_t partId = block_rank;
-  for (; partId < numParts_Region0; partId += blocks_in_grid) {
-    if (partId < numParts_Region0) {
-      evalEachPartition(partId);
-    }
+  evalStagesStatic(UINT32_MAX);
+#ifdef NANHU_GPU_DEVICES
+  if (cg::this_grid().thread_rank() == 0) {
+#ifdef NANHU_FINAL_ONLY
+    nanhu_final::finishCycle(regPool);
+#else
+    nanhu_device::finishCycle(regPool);
+#endif
   }
-  cooperative_groups::this_grid().sync();
-
-  for (partId = block_rank + numParts_Region0; partId < numTotalParts; partId += blocks_in_grid) {
-    if (partId < numTotalParts) {
-      evalEachPartition(partId);
-    }
-  }
-  cooperative_groups::this_grid().sync();
+#endif
 }
 
 __global__ void evalFreeRunningNCycles(uint32_t cycleCnt) {
-  for (uint32_t cycle = 0; cycle < cycleCnt; cycle++) {
-    uint32_t block_rank = blockIdx.x;
-    uint32_t blocks_in_grid = gridDim.x;
-
-    #ifdef ENABLE_SIM_PROFILE
-    int64_t start_clock = clock64();
-    #endif
-
-    uint32_t partId = block_rank;
-
-    for (; partId < numParts_Region0; partId += blocks_in_grid) {
-      if (partId < numParts_Region0) {
-        evalEachPartition(partId);
-
-        #ifdef ENABLE_SIM_PROFILE
-        if (cycle >= PROFILE_START_CYCLE && cycle < (PROFILE_START_CYCLE + PROFILE_COLLECT_CYCLE)) {
-          if (cg::this_thread_block().thread_rank() == 0) {
-            int64_t end_clock = clock64();
-            int64_t useful_cycles = end_clock - start_clock;
-
-            uint32_t profile_cycle = cycle - PROFILE_START_CYCLE;
-
-            int64_t average_useful_cycle = ((profile_ticks_useful[partId] * profile_cycle) + useful_cycles) / (profile_cycle + 1);
-            profile_ticks_useful[partId] = average_useful_cycle;
-          }
-        }
-        #endif
-      }
-    }
-
-
-    cooperative_groups::this_grid().sync();
-
-    #ifdef ENABLE_SIM_PROFILE
-
-    for (partId = block_rank; partId < numParts_Region0; partId += blocks_in_grid) {
-      if (partId < numParts_Region0) {
-
-        if (cycle >= PROFILE_START_CYCLE && cycle < (PROFILE_START_CYCLE + PROFILE_COLLECT_CYCLE)) {
-          if (cg::this_thread_block().thread_rank() == 0) {
-            int64_t end_clock = clock64();
-            int64_t total_cycles = end_clock - start_clock;
-
-            uint32_t profile_cycle = cycle - PROFILE_START_CYCLE;
-
-            int64_t average_total_cycle = ((profile_ticks_total[partId] * profile_cycle) + total_cycles) / (profile_cycle + 1);
-            profile_ticks_total[partId] = average_total_cycle;
-          }
-        }
-      }
-    }
-
-    start_clock = clock64();
-    #endif
-
-    for (partId = block_rank + numParts_Region0; partId < numTotalParts; partId += blocks_in_grid) {
-      if (partId < numTotalParts) {
-        evalEachPartition(partId);
-
-        #ifdef ENABLE_SIM_PROFILE
-        if (cycle >= PROFILE_START_CYCLE && cycle < (PROFILE_START_CYCLE + PROFILE_COLLECT_CYCLE)) {
-          if (cg::this_thread_block().thread_rank() == 0) {
-            int64_t end_clock = clock64();
-            int64_t useful_cycles = end_clock - start_clock;
-
-            uint32_t profile_cycle = cycle - PROFILE_START_CYCLE;
-
-            int64_t average_useful_cycle = ((profile_ticks_useful[partId] * profile_cycle) + useful_cycles) / (profile_cycle + 1);
-            profile_ticks_useful[partId] = average_useful_cycle;
-          }
-        }
-        #endif
-      }
-    }
-
-    cooperative_groups::this_grid().sync();
-
-    #ifdef ENABLE_SIM_PROFILE
-    for (partId = block_rank + numParts_Region0; partId < numTotalParts; partId += blocks_in_grid) {
-      if (partId < numTotalParts) {
-        if (cycle >= PROFILE_START_CYCLE && cycle < (PROFILE_START_CYCLE + PROFILE_COLLECT_CYCLE)) {
-          if (cg::this_thread_block().thread_rank() == 0) {
-            int64_t end_clock = clock64();
-            int64_t total_cycles = end_clock - start_clock;
-
-            uint32_t profile_cycle = cycle - PROFILE_START_CYCLE;
-
-            int64_t average_total_cycle = ((profile_ticks_total[partId] * profile_cycle) + total_cycles) / (profile_cycle + 1);
-            profile_ticks_total[partId] = average_total_cycle;
-          }
-        }
-      }
-    }
-    #endif
-
-    // update cycle counter
-    auto thread_rank = cooperative_groups::this_grid().thread_rank();
-    if (thread_rank == 0) {
+  for (uint32_t cycle = 0; cycle < cycleCnt; ++cycle) {
+    evalStagesStatic(cycle);
+#ifdef NANHU_FINAL_ONLY
+    if (cg::this_grid().thread_rank() == 0) nanhu_final::finishCycle(regPool);
+    // Publish helper outputs and reset before any block reads the next cycle.
+    cg::this_grid().sync();
+#endif
+    if (cg::this_grid().thread_rank() == 0)
       realCycles += 1;
-    }
-    // if (shouldStop) {
-    //   return;
-    // }
   }
-
 }
 
-// Each thread block find next job using atomic
+// Dynamic scheduling retains one task counter per stage. All blocks participate
+// in the reset and completion barriers, including blocks with no tasks.
 __global__ void evalFreeRunningNCycles_Large(uint32_t cycleCnt) {
-  for (uint32_t cycle = 0; cycle < cycleCnt; cycle++) {
-
-    __shared__ uint32_t part_id;
-
-    // #ifdef ENABLE_SIM_PROFILE
-    // uint32_t block_rank = blockIdx.x;
-    // int64_t start_clock = clock64();
-    // #endif
-
-    if (cg::this_grid().thread_rank() == 0) {
-      partTaskCounter = 0;
-    }
-    cg::this_grid().sync();
-
-    while (true) {
-      if (cg::this_thread_block().thread_rank() == 0) {
-        uint32_t part_id_local = atomicAdd(&partTaskCounter, 1);
-        part_id = part_id_local;
+  for (uint32_t cycle = 0; cycle < cycleCnt; ++cycle) {
+#ifdef ENABLE_SIM_PROFILE
+    // Static assignment keeps each partition's timing samples on its owner SM.
+    evalStagesStatic(cycle);
+#else
+    __shared__ unsigned long long partId;
+    for (uint32_t stage = 0; stage < numStages; ++stage) {
+      if (cg::this_grid().thread_rank() == 0)
+        partTaskCounter = stageOffsets[stage];
+      cg::this_grid().sync();
+      while (true) {
+        if (cg::this_thread_block().thread_rank() == 0)
+          partId = atomicAdd(&partTaskCounter, 1ULL);
+        __syncthreads();
+        if (partId >= stageOffsets[stage + 1])
+          break;
+        evalEachPartition(static_cast<uint32_t>(partId));
       }
-
-      __syncthreads();
-
-      if (part_id >= numParts_Region0) break;
-
-      evalEachPartition(part_id);
+      cg::this_grid().sync();
     }
-
-    cooperative_groups::this_grid().sync();
-
-    if (cg::this_grid().thread_rank() == 0) {
-      partTaskCounter = numParts_Region0;
-    }
+#endif
+#ifdef NANHU_FINAL_ONLY
+    if (cg::this_grid().thread_rank() == 0) nanhu_final::finishCycle(regPool);
+    // Publish helper outputs and reset before any block reads the next cycle.
     cg::this_grid().sync();
-
-    while (true) {
-      if (cg::this_thread_block().thread_rank() == 0) {
-        uint32_t part_id_local = atomicAdd(&partTaskCounter, 1);
-        part_id = part_id_local;
-      }
-
-      __syncthreads();
-
-      if (part_id >= numTotalParts) break;
-
-      evalEachPartition(part_id);
-    }
-
-    // update cycle counter
-    auto thread_rank = cooperative_groups::this_grid().thread_rank();
-    if (thread_rank == 0) {
+#endif
+    if (cg::this_grid().thread_rank() == 0)
       realCycles += 1;
-    }
-    // if (shouldStop) {
-    //   return;
-    // }
   }
-
 }
 
 uint64_t read_reg_from_gpu(const std::vector<std::tuple<uint32_t, uint32_t>>& signalLocs) {
@@ -1112,6 +1030,8 @@ static void allocAndCopyVector(T **devicePtr, const void *data, const size_t siz
 }
 
 void copy_netlist_to_gpu(toucanGPUSim::SimDesignInfo &design) {
+  const auto offsets = stagePartitionOffsets(design);
+  gpuPartInfos.clear();
   // Reset device status for each newly loaded simulation.
   unsigned int stop_host = 0;
   gpuErrchk(cudaMemcpyToSymbol(shouldStop, &stop_host, sizeof(stop_host)));
@@ -1157,7 +1077,6 @@ void copy_netlist_to_gpu(toucanGPUSim::SimDesignInfo &design) {
     assert(eachPart.valuePool.size() == eachPart.valuePoolSize);
     allocAndCopyVector(&(partInfo.valuePool), eachPart.valuePool.data(), eachPart.valuePoolSize);
     partInfo.valuePoolSize = eachPart.valuePoolSize;
-    assert(eachPart.valuePoolSize <= UINT16_MAX);
 
     // copy const vec pool
     if (eachPart.constVecPool.empty()) {
@@ -1180,7 +1099,7 @@ void copy_netlist_to_gpu(toucanGPUSim::SimDesignInfo &design) {
       size_t memSize = eachPart.ops_l0_exchangeRead.size() * sizeof(toucanGPUSim::CGExchangeReadMetaInfo);
       appendToNetlistVec(reinterpret_cast<const char*>(eachPart.ops_l0_exchangeRead.data()), memSize);
     }
-    assert((partInfo.numOpsL0ExgRead == 0) != (partInfo.numOpsL0RegRead == 0));
+    // A capacity cut can read both snapshot registers and earlier-stage values.
 
 
     // middle level mparts - serialize MicroParts
@@ -1288,27 +1207,14 @@ void copy_netlist_to_gpu(toucanGPUSim::SimDesignInfo &design) {
     cudaMemcpyToSymbol(partitions, &partInfosPtr, sizeof(SimPartitionPtrs*));
   }
 
-  // setup numRegions and partsInRegion
-  if (design.regionPartitionIds.size() != 2) {
-    std::cout << "For now only supports 2 region, " << design.regionPartitionIds.size() << " region in design file\n";
-  }
-  assert(design.regionPartitionIds.size() == 2 && "For now only supports 2 region");
-  std::vector<uint32_t> numParts;
-  size_t _partId = 0;
-  for (const auto &eachRegionParts: design.regionPartitionIds) {
-    for (const auto partId: eachRegionParts) {
-      assert(partId == _partId);
-      _partId++;
-    }
-    numParts.push_back(eachRegionParts.size());
-  }
-  // Should have exact 1 region
-  assert(numParts.size() == 2);
-  cudaMemcpyToSymbol(numParts_Region0, &numParts[0], sizeof(uint32_t));
-  cudaMemcpyToSymbol(numParts_Region1, &numParts[1], sizeof(uint32_t));
-  uint32_t totalParts = design.parts.size();
-  assert(totalParts = numParts[0] + numParts[1]);
-  cudaMemcpyToSymbol(numTotalParts, &totalParts, sizeof(uint32_t));
+  // Empty stages are valid; every block must still execute their grid barriers.
+  uint32_t *offsetsDevice;
+  allocAndCopyVector(&offsetsDevice, offsets.data(), offsets.size() * sizeof(uint32_t));
+  gpuErrchk(cudaMemcpyToSymbol(stageOffsets, &offsetsDevice, sizeof(offsetsDevice)));
+  const uint32_t stageCount = offsets.size() - 1;
+  gpuErrchk(cudaMemcpyToSymbol(numStages, &stageCount, sizeof(stageCount)));
+  const uint32_t totalParts = design.parts.size();
+  gpuErrchk(cudaMemcpyToSymbol(numTotalParts, &totalParts, sizeof(totalParts)));
 
   // copy print msgs
   std::vector<char*> printMsgs_device_ptrs;

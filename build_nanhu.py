@@ -18,6 +18,24 @@ def identity(path):
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
+def source_git_metadata():
+    unavailable = {"source_revision": None, "source_status": None}
+    try:
+        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=ROOT,
+                             capture_output=True, text=True)
+        if top.returncode or Path(top.stdout.strip()).resolve() != ROOT:
+            return unavailable
+        revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                                  capture_output=True, text=True)
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
+                                capture_output=True, text=True)
+        if revision.returncode or status.returncode:
+            return unavailable
+    except OSError:
+        return unavailable
+    return {"source_revision": revision.stdout.strip(), "source_status": status.stdout}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--abi", choices=("legacy16", "wide32"), required=True)
@@ -72,7 +90,7 @@ def main():
     for mode in ("checked", "final"):
         (out / mode).mkdir(exist_ok=True)
         (out / mode / "libToucanGPURT.a").unlink(missing_ok=True)
-    tracked = [ROOT / "build_nanhu.py", *sources]
+    tracked = [ROOT / "build_nanhu.py", ROOT / "provenance/accepted-sources.json", *sources]
     for folder in ("include", "runner"):
         tracked += sorted((ROOT / folder).glob("*"))
     source_ids = {str(path.relative_to(ROOT)): identity(path) for path in tracked if path.is_file()}
@@ -93,10 +111,7 @@ def main():
     if source_ids != {name: identity(ROOT / name) for name in source_ids}:
         raise RuntimeError("Source changed during build; build.json was not written")
     manifest = {**plan, "status": "built", "nvcc": {"path": nvcc, "version": version},
-                "source_revision": subprocess.check_output(
-                    ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-                "source_status": subprocess.check_output(
-                    ["git", "status", "--porcelain"], cwd=ROOT, text=True),
+                **source_git_metadata(),
                 "sources": source_ids, "build_steps": records,
                 **{key: identity(path) for key, path in binaries.items()}}
     temporary = out / "build.json.tmp"

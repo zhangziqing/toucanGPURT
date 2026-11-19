@@ -9,8 +9,8 @@ executed on a GPU**.
 
 ## Build Contract
 
-Requires Python 3.10+, GNU `ar`, a C++20-capable CUDA toolkit supporting the
-selected architecture, and Git for recording provenance. The accepted source
+Requires Python 3.10+, GNU `ar`, and a C++20-capable CUDA toolkit supporting the
+selected architecture. Git is optional for repository provenance. The accepted source
 build used NVCC 13.2.78, `sm_120`, `-O3`, `-lineinfo`, and a 64-register runtime
 limit. The script preserves these settings, with architecture selected explicitly.
 
@@ -51,6 +51,11 @@ top-level identity keys below are for audit consumers:
 Each key contains an absolute `path`, `bytes`, and `sha256`. The manifest also
 records ABI, architecture, NVCC path/version, source revision and dirty status,
 source hashes, exact commands, per-command build time, and log identities.
+Git revision and status are recorded only when `git rev-parse --show-toplevel`
+resolves to this runtime's exact source root. Standalone exports and copies
+nested in another repository use `null` for both fields, retaining source hashes
+including `provenance/accepted-sources.json` when supplied. The enclosing
+repository's revision is never attributed to an exported runtime.
 `plan.json`, `commands.json`, and `command-NN.log` retain build diagnostics.
 A failed rebuild invalidates the previous success manifest.
 
@@ -64,8 +69,12 @@ The generic target has no Nanhu device hooks; use `make nanhu` for these runners
 
 ## ABI Selection
 
-`TOUCAN_WIDE_POOL` must be defined consistently in the compiler, runtime, and
-runner. The build script controls this for every translation unit.
+`TOUCAN_WIDE_POOL` must be defined consistently in the runtime and runner. The
+build script controls this for every translation unit. The matching compiler
+fork's `nanhu-ready-v1` branch is a dedicated strict-two-round wide32 snapshot:
+32-bit fields and `TCWIDE1` serialization are built in, not selected by this
+macro. Its output requires `--abi wide32`; `--abi legacy16` instead loads
+previously generated legacy16 designs.
 
 | Build ABI | Local offsets/counts | Design serialization | Pool bound |
 | --- | --- | --- | --- |
